@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FinFlow</title>
   <style>
     body {
@@ -24,7 +25,7 @@
       margin-bottom: 24px;
     }
 
-    .total-card {
+    .balance-card {
       background: #1d1d1f;
       color: white;
       padding: 24px;
@@ -32,16 +33,47 @@
       margin-bottom: 24px;
     }
 
-    .total-label {
+    .balance-label {
       font-size: 14px;
       opacity: 0.7;
       margin: 0 0 4px 0;
     }
 
-    .total-amount {
+    .balance-amount {
       font-size: 36px;
       font-weight: 600;
-      margin: 0;
+      margin: 0 0 16px 0;
+    }
+
+    .balance-row {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .balance-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .income {
+      color: #30d158;
+    }
+
+    .expense {
+      color: #ff6961;
     }
 
     .form {
@@ -54,15 +86,55 @@
       gap: 10px;
     }
 
-    input {
+    .type-toggle {
+      display: flex;
+      background: #f5f5f7;
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .type-toggle button {
+      flex: 1;
+      background: transparent;
+      color: #86868b;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .type-toggle button.active {
+      background: white;
+      color: #1d1d1f;
+    }
+
+    .type-toggle button.active.expense-active {
+      color: #ff3b30;
+    }
+
+    .type-toggle button.active.income-active {
+      color: #34c759;
+    }
+
+    input, textarea {
       padding: 10px 12px;
       border: 1px solid #d2d2d7;
       border-radius: 8px;
       font-size: 16px;
       font-family: inherit;
+      width: 100%;
+      box-sizing: border-box;
     }
 
-    button {
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    button.primary {
       padding: 10px;
       background: #0071e3;
       color: white;
@@ -73,7 +145,7 @@
       cursor: pointer;
     }
 
-    button:hover {
+    button.primary:hover {
       background: #0077ed;
     }
 
@@ -90,18 +162,42 @@
       margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    .amount {
-      font-weight: 600;
-      color: #1d1d1f;
+    .left-side {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .li-description {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .li-meta {
+      font-size: 12px;
+      color: #86868b;
+    }
+
+    .li-notes {
+      font-size: 13px;
+      color: #6e6e73;
+      margin-top: 4px;
+      font-style: italic;
     }
 
     .right-side {
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .amount-display {
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     .delete-btn {
@@ -126,29 +222,75 @@
   <h1>FinFlow</h1>
   <p class="subtitle">My personal finance tracker</p>
 
-  <div class="total-card">
-    <p class="total-label">Total spent</p>
-    <p class="total-amount" id="totalAmount">0 AED</p>
+  <div class="balance-card">
+    <p class="balance-label">Balance</p>
+    <p class="balance-amount" id="balanceAmount">0 AED</p>
+    <div class="balance-row">
+      <div class="balance-stat">
+        <span class="stat-label">Income</span>
+        <span class="stat-value income" id="incomeAmount">0 AED</span>
+      </div>
+      <div class="balance-stat">
+        <span class="stat-label">Expenses</span>
+        <span class="stat-value expense" id="expenseAmount">0 AED</span>
+      </div>
+    </div>
   </div>
 
   <div class="form">
+    <div class="type-toggle">
+      <button id="expenseBtn" class="active expense-active" onclick="setType('expense')">Expense</button>
+      <button id="incomeBtn" onclick="setType('income')">Income</button>
+    </div>
     <input type="text" id="descriptionInput" placeholder="What was it for?">
     <input type="number" id="amountInput" placeholder="Amount">
-    <button onclick="addTransaction()">Add Transaction</button>
+    <input type="date" id="dateInput">
+    <textarea id="notesInput" placeholder="Notes (optional)"></textarea>
+    <button class="primary" onclick="addTransaction()">Add Transaction</button>
   </div>
 
   <ul id="transactionList"></ul>
 
   <script>
     let transactions = [];
+    let currentType = 'expense';
+
+    function setType(type) {
+      currentType = type;
+      const expenseBtn = document.getElementById('expenseBtn');
+      const incomeBtn = document.getElementById('incomeBtn');
+
+      if (type === 'expense') {
+        expenseBtn.classList.add('active', 'expense-active');
+        incomeBtn.classList.remove('active', 'income-active');
+      } else {
+        incomeBtn.classList.add('active', 'income-active');
+        expenseBtn.classList.remove('active', 'expense-active');
+      }
+    }
+
+    function getTodayDate() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return year + '-' + month + '-' + day;
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
+    }
 
     function loadTransactions() {
       const saved = localStorage.getItem('finflow_transactions');
       if (saved) {
         transactions = JSON.parse(saved);
       }
+      document.getElementById('dateInput').value = getTodayDate();
       renderList();
-      updateTotal();
+      updateBalance();
     }
 
     function saveTransactions() {
@@ -159,47 +301,78 @@
       const list = document.getElementById('transactionList');
       list.innerHTML = '';
 
-      for (let i = 0; i < transactions.length; i++) {
-        const t = transactions[i];
+      const sorted = transactions.slice().sort(function(a, b) {
+        return new Date(b.date) - new Date(a.date);
+      });
+
+      for (let i = 0; i < sorted.length; i++) {
+        const t = sorted[i];
+        const sign = t.type === 'income' ? '+' : '-';
+        const colorClass = t.type === 'income' ? 'income' : 'expense';
+        const notesHtml = t.notes ? '<div class="li-notes">' + t.notes + '</div>' : '';
+
         const newItem = document.createElement('li');
         newItem.innerHTML =
-          '<span>' + t.description + '</span>' +
+          '<div class="left-side">' +
+            '<div class="li-description">' + t.description + '</div>' +
+            '<div class="li-meta">' + formatDate(t.date) + '</div>' +
+            notesHtml +
+          '</div>' +
           '<div class="right-side">' +
-            '<span class="amount">' + t.amount + ' AED</span>' +
+            '<span class="amount-display ' + colorClass + '">' + sign + t.amount + ' AED</span>' +
             '<button class="delete-btn" onclick="deleteTransaction(' + t.id + ')">×</button>' +
           '</div>';
         list.appendChild(newItem);
       }
     }
 
-    function updateTotal() {
-      let total = 0;
+    function updateBalance() {
+      let income = 0;
+      let expenses = 0;
+
       for (let i = 0; i < transactions.length; i++) {
-        total = total + Number(transactions[i].amount);
+        const amount = Number(transactions[i].amount);
+        if (transactions[i].type === 'income') {
+          income = income + amount;
+        } else {
+          expenses = expenses + amount;
+        }
       }
-      document.getElementById('totalAmount').textContent = total + ' AED';
+
+      const balance = income - expenses;
+
+      document.getElementById('balanceAmount').textContent = balance + ' AED';
+      document.getElementById('incomeAmount').textContent = income + ' AED';
+      document.getElementById('expenseAmount').textContent = expenses + ' AED';
     }
 
     function addTransaction() {
       const description = document.getElementById('descriptionInput').value;
       const amount = document.getElementById('amountInput').value;
+      const date = document.getElementById('dateInput').value;
+      const notes = document.getElementById('notesInput').value;
 
-      if (description === '' || amount === '') {
+      if (description === '' || amount === '' || date === '') {
         return;
       }
 
       transactions.push({
         id: Date.now(),
+        type: currentType,
         description: description,
-        amount: amount
+        amount: amount,
+        date: date,
+        notes: notes
       });
 
       saveTransactions();
       renderList();
-      updateTotal();
+      updateBalance();
 
       document.getElementById('descriptionInput').value = '';
       document.getElementById('amountInput').value = '';
+      document.getElementById('notesInput').value = '';
+      document.getElementById('dateInput').value = getTodayDate();
     }
 
     function deleteTransaction(id) {
@@ -209,7 +382,7 @@
 
       saveTransactions();
       renderList();
-      updateTotal();
+      updateBalance();
     }
 
     loadTransactions();
