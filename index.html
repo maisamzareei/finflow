@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>FinFlow</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #f5f5f7;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      color: #1d1d1f;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #86868b;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .total-card {
+      background: #1d1d1f;
+      color: white;
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+    }
+
+    .total-label {
+      font-size: 14px;
+      opacity: 0.7;
+      margin: 0 0 4px 0;
+    }
+
+    .total-amount {
+      font-size: 36px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .form {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input {
+      padding: 10px 12px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+    }
+
+    button {
+      padding: 10px;
+      background: #0071e3;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0077ed;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: white;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .amount {
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .right-side {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .delete-btn {
+      background: none;
+      color: #86868b;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      line-height: 1;
+    }
+
+    .delete-btn:hover {
+      color: #ff3b30;
+      background: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>FinFlow</h1>
+  <p class="subtitle">My personal finance tracker</p>
+
+  <div class="total-card">
+    <p class="total-label">Total spent</p>
+    <p class="total-amount" id="totalAmount">0 AED</p>
+  </div>
+
+  <div class="form">
+    <input type="text" id="descriptionInput" placeholder="What was it for?">
+    <input type="number" id="amountInput" placeholder="Amount">
+    <button onclick="addTransaction()">Add Transaction</button>
+  </div>
+
+  <ul id="transactionList"></ul>
+
+  <script>
+    let transactions = [];
+
+    function loadTransactions() {
+      const saved = localStorage.getItem('finflow_transactions');
+      if (saved) {
+        transactions = JSON.parse(saved);
+      }
+      renderList();
+      updateTotal();
+    }
+
+    function saveTransactions() {
+      localStorage.setItem('finflow_transactions', JSON.stringify(transactions));
+    }
+
+    function renderList() {
+      const list = document.getElementById('transactionList');
+      list.innerHTML = '';
+
+      for (let i = 0; i < transactions.length; i++) {
+        const t = transactions[i];
+        const newItem = document.createElement('li');
+        newItem.innerHTML =
+          '<span>' + t.description + '</span>' +
+          '<div class="right-side">' +
+            '<span class="amount">' + t.amount + ' AED</span>' +
+            '<button class="delete-btn" onclick="deleteTransaction(' + t.id + ')">×</button>' +
+          '</div>';
+        list.appendChild(newItem);
+      }
+    }
+
+    function updateTotal() {
+      let total = 0;
+      for (let i = 0; i < transactions.length; i++) {
+        total = total + Number(transactions[i].amount);
+      }
+      document.getElementById('totalAmount').textContent = total + ' AED';
+    }
+
+    function addTransaction() {
+      const description = document.getElementById('descriptionInput').value;
+      const amount = document.getElementById('amountInput').value;
+
+      if (description === '' || amount === '') {
+        return;
+      }
+
+      transactions.push({
+        id: Date.now(),
+        description: description,
+        amount: amount
+      });
+
+      saveTransactions();
+      renderList();
+      updateTotal();
+
+      document.getElementById('descriptionInput').value = '';
+      document.getElementById('amountInput').value = '';
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(function(t) {
+        return t.id !== id;
+      });
+
+      saveTransactions();
+      renderList();
+      updateTotal();
+    }
+
+    loadTransactions();
+  </script>
+</body>
+</html>
